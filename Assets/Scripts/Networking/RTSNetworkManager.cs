@@ -14,7 +14,10 @@ public class RTSNetworkManager : NetworkManager
     public static event Action ClientOnDisconnect;
 
 
+    //Determines whether game is in progress or not.
     private bool isGameInProgress = false;
+
+    //List of players
     public List<RTSPlayer> Players { get; } = new List<RTSPlayer>();
 
 
@@ -22,14 +25,14 @@ public class RTSNetworkManager : NetworkManager
 
     public override void OnServerConnect(NetworkConnection conn)
     {
-        //If game is in progress disconnect connection.
+        //When player connects to server & game is inprogress we disconnect
         if (!isGameInProgress) return;
         conn.Disconnect();
     }
 
     public override void OnServerDisconnect(NetworkConnection conn)
     {
-        //Gets player from connection. Removes player from Players List
+        //Gets player player that disconnects from server & removes from list.
         RTSPlayer player = conn.identity.GetComponent<RTSPlayer>();
         Players.Remove(player);
 
@@ -38,22 +41,24 @@ public class RTSNetworkManager : NetworkManager
 
     public override void OnStopServer()
     {
-        //Clears players list & sets game in progress to false
+        //When Server stops we just reset player list & inprogress bool
         Players.Clear();
         isGameInProgress = false;
     }
 
     public void StartGame()
     {
-        //If we have 2 player, set game in progress to true & change tell server to change scenes
+        //Check player count, Set gameinprogress bool & change to online scene.
         if (Players.Count < 2) return;
         isGameInProgress = true;
 
+        //changes scene to maps
         ServerChangeScene("Scene_Map_01");
     }
 
     public override void OnServerAddPlayer(NetworkConnection conn)
     {
+        //When Server adds player to scene e.g. Lobby now. Add player to player lobby list. Set team color & set party owner to the first person in lobby.
         //Calls normal spawn player logic. Then spawns the unit spawner in at spawnPoint for Server & over Network for clients.
         base.OnServerAddPlayer(conn);
 
@@ -63,12 +68,16 @@ public class RTSNetworkManager : NetworkManager
 
         //Sets the teams color when a player is added.
         player.SetTeamColor(new Color(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f)));
+
+        //Sets the party owner as whoever is in lobby first.
+        player.SetPartyOwner(Players.Count == 1);
     }
 
     public override void OnServerSceneChanged(string sceneName)
     {
-        //When server chagnes scene. If this is a valid map spawn GameOverHandlerInstance to Server & Network
-        //If the active sceen has the Scene_Map prefix spawn the gameOverHandler
+        //Whenever the server changes the scene. We check if its an online game map. If so we spawn in our GameOverHandler
+        //Then for each player in our Players lobby List<RTSPlayer> we spawn in their base instance @ network start positions.
+        //We make sure to give authority to the players connection.
         if (SceneManager.GetActiveScene().name.StartsWith("Scene_Map"))
         {
             //Spawns this in on server
@@ -85,7 +94,6 @@ public class RTSNetworkManager : NetworkManager
     }
    
     #endregion
-
 
     #region Client
 

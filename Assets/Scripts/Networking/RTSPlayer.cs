@@ -13,9 +13,11 @@ public class RTSPlayer : NetworkBehaviour
     [SerializeField] private Building[] buildings = new Building[0];
     [SerializeField] private float buildingRangeLimit = 5f;
 
+    //Syncvar for players general resources
     [SyncVar(hook = nameof(ClientHandleResourceUpdated))]
     private int resources = 1000;
 
+    //Set to the player who joins the lobby first.
     [SyncVar(hook = nameof(AuthorityHandlePartyOwnerStateUpdated))]
     private bool isPartyOwner = false;
 
@@ -25,6 +27,7 @@ public class RTSPlayer : NetworkBehaviour
     private List<Building> myBuildings = new List<Building>();
 
     public event Action<int> ClientOnResourcesUpdated;
+
     public static event Action<bool> AuthorityOnPartyOwnerStateUpdated;
 
     public bool GetIsPartyOwner()
@@ -94,6 +97,8 @@ public class RTSPlayer : NetworkBehaviour
 
         Building.ServerOnBuildingSpawned += ServerHandleBuildingSpawned;
         Building.ServerOnBuildingDespawn += ServerHandleBuildingDespawned;
+
+        DontDestroyOnLoad(gameObject);
     }
 
     public override void OnStopServer()
@@ -217,13 +222,13 @@ public class RTSPlayer : NetworkBehaviour
 
         Building.AuthorityOnBuildingSpawned += AuthorityHandleBuildingSpawned;
         Building.AuthorityOnBuildingDespawn += AuthorityHandleBuildingDespawned;
-
-
     }
 
     public override void OnStartClient()
     {
         if (NetworkServer.active) return;
+
+        DontDestroyOnLoad(gameObject);
         ((RTSNetworkManager)NetworkManager.singleton).Players.Add(this);
     }
 
@@ -255,8 +260,8 @@ public class RTSPlayer : NetworkBehaviour
 
     private void AuthorityHandlePartyOwnerStateUpdated(bool oldstate, bool newState)
     {
+        //Whenever partyOwner changes we invoke the authorityPartyOwner event. Only for the client trhat has authority over it.
         if (!hasAuthority) return;
-
         AuthorityOnPartyOwnerStateUpdated?.Invoke(newState);
     }
 
