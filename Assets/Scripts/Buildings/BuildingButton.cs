@@ -24,17 +24,12 @@ public class BuildingButton : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         mainCamera = Camera.main;
         iconImage.sprite = building.GetIcon();
         priceText.text = building.GetPrice().ToString();
+        player = NetworkClient.connection.identity.GetComponent<RTSPlayer>();               //Get the identity component of the client connection calling this script. This allows us to get RTSPlayer component
         buildingCollider = building.GetComponent<BoxCollider>();
     }
 
     private void Update()
     {
-        if (player == null)
-        {
-            //This set player on Update. Only sets it until not null
-            player = NetworkClient.connection.identity.GetComponent<RTSPlayer>();               //Get the identity component of the client connection calling this script. This allows us to get RTSPlayer component
-        }
-
         //Drag building. If preview is not null
         if (buildingPreviewInstance == null) return;
         UpdateBuildingPreview();
